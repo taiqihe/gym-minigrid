@@ -15,15 +15,15 @@ class Window:
     """
 
     def __init__(self, title):
-        self.fig = None
+        self.fig = plt.figure(title)
 
         self.imshow_obj = None
 
         # Create the figure and axes
-        self.fig, self.ax = plt.subplots()
+        self.ax = self.fig.add_subplot()
 
         # Show the env name in the window title
-        self.fig.canvas.set_window_title(title)
+        # self.fig.canvas.set_window_title(title)
 
         # Turn off x/y axis numbering/ticks
         self.ax.xaxis.set_ticks_position('none')
@@ -60,7 +60,7 @@ class Window:
         Set/update the caption text below the image
         """
 
-        plt.xlabel(text)
+        self.ax.set_xlabel(text)
 
     def reg_key_handler(self, key_handler):
         """
