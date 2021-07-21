@@ -115,6 +115,8 @@ class WorldObj:
     @staticmethod
     def decode(type_idx, color_idx, state):
         """Create an object from a 3-tuple state description"""
+        if type_idx not in IDX_TO_OBJECT:
+            return GeneralObj.decode(type_idx, color_idx, state)
 
         obj_type = IDX_TO_OBJECT[type_idx]
         color = IDX_TO_COLOR[color_idx]
@@ -143,7 +145,7 @@ class WorldObj:
         elif obj_type == 'lava':
             v = Lava()
         else:
-            assert False, "unknown object type in decode '%s'" % obj_type
+            raise ValueError("unknown object type in decode '%s'" % obj_type)
 
         return v
 
@@ -325,6 +327,48 @@ class Box(WorldObj):
         # Replace the box by its contents
         env.grid.set(*pos, self.contains)
         return True
+
+
+class GeneralObj(WorldObj):
+    vocab = None
+    decoder = None
+
+    def __init__(self, objtype, color):
+        # type can be any noun, color can be any adjective
+        
+        # if vocab is None:
+        #     raise ValueError('Vocab for GeneralObj must be set before initialization')
+        self.type = objtype
+        self.color = color
+        self.contains = None
+        self.init_pos = None
+        self.cur_pos = None
+
+    def can_pickup(self):
+        return True
+
+    def encode(self):
+        if self.vocab is None:
+            return (0, 0, 0)
+        return (self.vocab[self.type], self.vocab[self.color], 0)
+
+    def render(self, img):
+        # Render a red x
+        c = COLORS['red']
+        fill_coords(img, point_in_line(0.04, 0.04, 0.96, 0.96, .05), c)
+        fill_coords(img, point_in_line(0.04, 0.96, 0.96, 0.04, .05), c)
+
+    @classmethod
+    def decode(cls, type_idx, color_idx, state):
+        if type_idx not in cls.decoder or color_idx not in cls.decoder:
+            cls.decoder = {v:k for k,v in vocab.items()}
+        return cls(cls.decoder[type_idx], cls.decoder[color_idx])
+
+    @classmethod
+    def load_vocab(cls, vocab):
+        cls.vocab = vocab
+        cls.decoder = {v:k for k,v in vocab.items()}
+
 
 class Grid:
     """
@@ -538,7 +582,7 @@ class Grid:
         if vis_mask is None:
             vis_mask = np.ones((self.width, self.height), dtype=bool)
 
-        array = np.zeros((self.width, self.height, 3), dtype='uint8')
+        array = np.zeros((self.width, self.height, 3), dtype='int32')
 
         for i in range(self.width):
             for j in range(self.height):
